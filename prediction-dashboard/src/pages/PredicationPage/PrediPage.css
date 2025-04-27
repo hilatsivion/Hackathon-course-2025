@@ -1,6 +1,6 @@
 .cards-container-pred {
   display: flex;
-  gap: 20px;
+  gap: 60px;
   justify-content: center;
   align-items: center;
   max-width: 1330px;

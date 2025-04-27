@@ -2,6 +2,7 @@ import React from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import "./LocationMap.css";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -12,13 +13,7 @@ L.Icon.Default.mergeOptions({
 
 function LocationMap({ latitude, longitude, name }) {
   return (
-    <div
-      style={{
-        width: "500px",
-        height: "400px",
-        marginTop: "20px",
-      }}
-    >
+    <div className="map-container">
       <MapContainer
         center={[latitude, longitude]}
         zoom={13}
