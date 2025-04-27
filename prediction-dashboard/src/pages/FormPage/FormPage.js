@@ -298,9 +298,9 @@ function FormPage() {
             </label>
 
             <label className="form-label">
-              תאריך:
+              תאריך ושעה:
               <input
-                type="date"
+                type="datetime-local"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 className="form-input"
@@ -309,6 +309,7 @@ function FormPage() {
                 required
               />
             </label>
+
             {error && <div className="form-error">{error}</div>}
             <button type="submit" className="submit-button">
               <img src={sendIcon} alt="שלח" />
