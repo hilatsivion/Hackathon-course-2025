@@ -11,7 +11,15 @@ function PredicationPage() {
   const location = useLocation();
   const { predictionData } = location.state || {};
 
-  if (!predictionData) {
+  if (!predictionData.currentCall || !predictionData.predictions) {
+    return <div>אין נתונים להצגה</div>;
+  }
+
+  if (
+    !predictionData ||
+    !predictionData.currentCall ||
+    !predictionData.predictions
+  ) {
     return <div>לא התקבלו נתונים להצגה</div>;
   }
 
@@ -41,7 +49,7 @@ function PredicationPage() {
             ))}
           </DashboardCard>
 
-          <DashboardCard title="קריאות צפויות ל-8 השעות הקרובות">
+          {/* <DashboardCard title="קריאות צפויות ל-8 השעות הקרובות">
             {predictions.eightHours.map((item, index) => (
               <PredictItem
                 key={index}
@@ -49,7 +57,7 @@ function PredicationPage() {
                 percentage={item.percentage}
               />
             ))}
-          </DashboardCard>
+          </DashboardCard> */}
 
           <DashboardCard title="קריאות צפויות ל-24 השעות הקרובות">
             {predictions.twentyFourHours.map((item, index) => (
