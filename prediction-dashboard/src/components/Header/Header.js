@@ -1,6 +1,6 @@
 import React from "react";
 import "./Header.css";
-import emekLogo from "../../assets/images/emek-logo.png"; // ייבוא אמיתי של התמונה
+import emekLogo from "../../assets/images/emek-logo.png";
 
 function Header() {
   return (
