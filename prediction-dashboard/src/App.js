@@ -1,11 +1,15 @@
-import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import FormPage from "./pages/FormPage/FormPage";
+import PredicationPage from "./pages/PredicationPage/PredicationPage";
 
 function App() {
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Prediction Dashboard</h1>
-      <p>Start predicting now!</p>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<FormPage />} />
+        <Route path="/dashboard" element={<PredicationPage />} />
+      </Routes>
+    </Router>
   );
 }
 

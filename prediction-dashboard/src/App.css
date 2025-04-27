@@ -1,38 +1,135 @@
-.App {
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Arial", sans-serif;
+  background-color: rgb(255, 254, 245);
+  direction: rtl;
+  font-family: "Assistant", sans-serif;
+  font-weight: bold;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.page-title {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 32px;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+@media (min-width: 768px) {
+  .cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.chart-container {
+  height: 250px;
+  position: relative;
+  display: flex;
+  justify-content: center;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.result-text {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #3b82f6;
+  margin: 24px 0;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.form-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-title {
+  font-size: 3rem;
+  margin-bottom: 24px;
+  background-color: #114781;
+  color: white;
+  padding: 1.5rem;
+  position: relative;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.form {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+}
+
+.form-label {
+  margin-bottom: 20px;
+  font-size: 1rem;
+  color: #374151;
+}
+
+.form-wrapper-content {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-input {
+  width: 97.5%;
+  padding: 14px 10px;
+  margin-top: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+}
+
+.form-error {
+  color: red;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.submit-button {
+  background-color: #007bff;
   color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  width: fit-content;
+  display: flex;
 }
 
-.App-link {
-  color: #61dafb;
+.submit-button:hover {
+  background-color: #1d4ed8;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.submit-button img {
+  width: 18px;
+  padding-left: 5px;
+}
+
+option {
+  direction: rtl;
 }

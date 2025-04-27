@@ -1,0 +1,23 @@
+.header {
+  background-color: rgb(254, 251, 234);
+  height: 80px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.header-logo {
+  background-color: rgb(254, 251, 234);
+  width: 200px;
+  border-radius: 0 0 1rem 1rem;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 45px;
+  z-index: 1000;
+  position: absolute;
+  right: 20px;
+  padding: 20px;
+}
