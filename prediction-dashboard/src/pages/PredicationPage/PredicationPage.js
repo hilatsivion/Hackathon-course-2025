@@ -16,6 +16,7 @@ function PredicationPage() {
   if (
     !predictionData ||
     !predictionData["1h_prediction"] ||
+    !predictionData["8h_prediction"] ||
     !predictionData["24h_prediction"]
   ) {
     return <div>אין נתונים להצגה</div>;
