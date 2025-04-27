@@ -237,22 +237,52 @@ function FormPage() {
   const [selectedTopic, setSelectedTopic] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!settlements.includes(selectedSettlement)) {
       setError("בחר יישוב מהרשימה בלבד");
-      return;
-    }
-    if (!date) {
-      setError("בחר תאריך");
       return;
     }
     if (!topics.includes(selectedTopic)) {
       setError("בחר נושא מהרשימה בלבד");
       return;
     }
+    if (!date) {
+      setError("בחר תאריך ושעה");
+      return;
+    }
+
     setError("");
-    navigate("/dashboard");
+
+    try {
+      const response = await fetch("http://localhost:5001/predict", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          settlement: selectedSettlement,
+          topic: selectedTopic,
+          date: date,
+          holiday: 0, // תמיד 0 בשלב הזה
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("שגיאה בקבלת תשובה מהשרת");
+      }
+
+      const predictionData = await response.json();
+
+      console.log("קיבלנו תשובה מהשרת:", predictionData);
+
+      // עכשיו ננווט עם המידע שקיבלנו לדשבורד
+      navigate("/dashboard", { state: { predictionData } });
+    } catch (error) {
+      console.error("שגיאה בשליחת הבקשה:", error);
+      setError("הייתה שגיאה בשליחת הבקשה לשרת");
+    }
   };
 
   return (

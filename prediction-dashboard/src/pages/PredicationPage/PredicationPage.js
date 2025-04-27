@@ -1,26 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useLocation } from "react-router-dom";
 import Header from "../../components/Header/Header";
 import CurrentCallInfo from "../../components/CurrentCallInfo/CurrentCallInfo";
 import LocationMap from "../../components/Map/LocationMap";
 import DashboardCard from "../../components/DashboardCardPred/DashboardCardPred";
 import PredictItem from "../../components/PredictItem/PredictItem";
-import { fetchPredictionData } from "../../api/predictionApi";
 import "./PrediPage.css";
 
 function PredicationPage() {
-  const [data, setData] = useState(null);
+  const location = useLocation();
+  const { predictionData } = location.state || {};
 
-  useEffect(() => {
-    fetchPredictionData().then((response) => {
-      setData(response);
-    });
-  }, []);
-
-  if (!data) {
-    return <div>טוען נתונים...</div>;
+  if (!predictionData) {
+    return <div>לא התקבלו נתונים להצגה</div>;
   }
 
-  const { currentCall, predictions } = data;
+  const { currentCall, predictions } = predictionData;
 
   return (
     <>
