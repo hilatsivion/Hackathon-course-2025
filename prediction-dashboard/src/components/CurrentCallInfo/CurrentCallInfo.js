@@ -4,14 +4,7 @@ function CurrentCallInfo({ type, time, weather, specialDay }) {
   return (
     <div className="card">
       <h2 className="card-title">נתוני הקריאה הנוכחית והסביבה</h2>
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "space-around",
-          marginTop: "20px",
-        }}
-      >
+      <div className="dashboard-card-top">
         <div>
           <strong>סוג קריאה נוכחית:</strong> {type}
         </div>

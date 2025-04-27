@@ -30,18 +30,36 @@ body {
   margin-bottom: 32px;
 }
 
+.card {
+  background-color: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  margin: 30px auto;
+}
+
+.card-title {
+  background-color: #133d67;
+  color: white;
+  text-align: center;
+  padding: 30px 0;
+  font-size: 24px;
+  font-weight: bold;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.dashboard-card-top {
+  padding: 20px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
 @media (min-width: 768px) {
   .cards-grid {
     grid-template-columns: repeat(3, 1fr);
   }
-}
-
-.card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
-  text-align: center;
 }
 
 .chart-container {
@@ -62,7 +80,7 @@ body {
   max-width: 1000px;
   margin: 40px auto;
   background: #ffffff;
-  border-radius: 8px;
+  border-radius: 20px;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
 }
 

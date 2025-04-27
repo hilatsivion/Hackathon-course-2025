@@ -1,0 +1,25 @@
+.dashboard-card {
+  width: 500px;
+  background-color: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  margin: 30px auto;
+}
+
+.dashboard-card-header {
+  background-color: #133d67;
+  color: white;
+  text-align: center;
+  padding: 30px 0;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.dashboard-card-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 280px;
+}

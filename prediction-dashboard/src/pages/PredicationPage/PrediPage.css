@@ -1,0 +1,8 @@
+.cards-container-pred {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  max-width: 1330px;
+  margin: 0 auto;
+}

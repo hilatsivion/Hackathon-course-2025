@@ -62,8 +62,7 @@ function IncidentForm() {
       return;
     }
     setError("");
-    // ניווט לדשבורד
-    navigate("/dashboard"); // נניח שהדאשבורד יושב בנתיב הזה
+    navigate("/dashboard");
   };
 
   return (
