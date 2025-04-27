@@ -253,6 +253,7 @@ function FormPage() {
     }
 
     setError("");
+    setLoading(true);
 
     try {
       const response = await fetch("http://localhost:5001/predict", {
@@ -264,7 +265,7 @@ function FormPage() {
           settlement: selectedSettlement,
           topic: selectedTopic,
           date: date,
-          holiday: "0", // תמיד 0 בשלב הזה
+          holiday: "0",
         }),
       });
 
@@ -289,12 +290,22 @@ function FormPage() {
     } catch (error) {
       console.error("שגיאה בשליחת הבקשה:", error);
       setError("הייתה שגיאה בשליחת הבקשה לשרת");
+      setLoading(false);
     }
   };
 
   return (
     <>
       <Header />
+      {loading ? (
+        <div className="loader-container">
+          <div className="loader"></div>
+          <div>שולח בקשה לשרת...</div>
+        </div>
+      ) : (
+        <div className="form-container">{/* כל הטופס כאן כמו שהיה */}</div>
+      )}
+
       <div className="form-container">
         <h1 className="form-title">מוקד המועצה</h1>
         <form onSubmit={handleSubmit} className="form">
