@@ -232,6 +232,8 @@ function FormPage() {
   const [date, setDate] = useState("");
   const [error, setError] = useState("");
   const [selectedTopic, setSelectedTopic] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -262,7 +264,7 @@ function FormPage() {
           settlement: selectedSettlement,
           topic: selectedTopic,
           date: date,
-          holiday: 0, // תמיד 0 בשלב הזה
+          holiday: "0", // תמיד 0 בשלב הזה
         }),
       });
 
@@ -274,8 +276,16 @@ function FormPage() {
 
       console.log("קיבלנו תשובה מהשרת:", predictionData);
 
-      // עכשיו ננווט עם המידע שקיבלנו לדשבורד
-      navigate("/dashboard", { state: { predictionData } });
+      navigate("/dashboard", {
+        state: {
+          predictionData,
+          userSelection: {
+            selectedSettlement,
+            selectedTopic,
+            date,
+          },
+        },
+      });
     } catch (error) {
       console.error("שגיאה בשליחת הבקשה:", error);
       setError("הייתה שגיאה בשליחת הבקשה לשרת");

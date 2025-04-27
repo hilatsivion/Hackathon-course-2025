@@ -3,137 +3,95 @@ import numpy as np
 import joblib
 import os
 import glob
-from datetime import datetime # To handle datetime input
-import gc # Import the garbage collector module
-import time # To potentially add delays if needed
-# Make sure xgboost and lightgbm are installed if you might load models from either
-# import xgboost as xgb
-# import lightgbm as lgb
-from . import utils
-# import traind_models
+from datetime import datetime
+import gc
+import time
+
+# Removed unused import: from . import utils
+
 
 def clean_label(label):
-    """
-    Removes standard prefixes/suffixes ('has_', '_next_24h_here')
-    and replaces underscores with spaces for better readability.
-
-
-    Args:
-        label (str): The original target column name.
-
-
-    Returns:
-        str: The cleaned label.
-    """
-    if isinstance(label, str): # Ensure input is a string
+    if isinstance(label, str):
         label = label.replace('has_', '')
         label = label.replace('_next_24h_here', '')
-        label = label.replace('_', ' ') # Replace underscores with spaces
+        label = label.replace('_', ' ')
     return label
 
 
-# Defaulting to the latest XGBoost models directory, change if needed
 def predict_next_event_probabilities(event_data, models_directory='trained_models', datetime_col='תאריך ושעה פתיחה'):
-    """
-    Predicts the probability of various 'next event' types occurring within 24 hours,
-    based on the input event data, using previously trained models.
-    Optimized for lower memory usage with enhanced logging.
-    *** IMPORTANT: Assumes models were trained using the feature engineering
-        from the LightGBM/XGBoost training scripts (cyclical time, weekend flag) ***
-
-
-    Args:
-        event_data (dict): A dictionary representing a single event.
-                           Must contain all *raw* features required by the
-                           feature engineering steps (latitude, longitude, temp, etc.)
-                           including the original datetime column specified by `datetime_col`.
-        models_directory (str): Path to the directory containing the saved
-                                scikit-learn pipeline (.joblib) files.
-                                *** Ensure this points to the correct directory
-                                    (e.g., 'trained_models' or 'trained_models_lgbm_v1') ***
-        datetime_col (str): The name of the key in `event_data` that holds
-                            the primary datetime information for the event.
-
-
-    Returns:
-        dict: A dictionary mapping cleaned event type names (str) to their
-              predicted probabilities (float, between 0.0 and 1.0). Sorted.
-              Returns an empty dictionary if no models are found or critical errors occur.
-    """
     print("--- Starting Prediction Function ---")
     if gc.isenabled(): print("Garbage collector is enabled.")
     else: gc.enable(); print("Garbage collector enabled.")
 
-
-    # --- 1. Find Saved Model Pipeline Files ---
     print(f"Searching for models in: {os.path.abspath(models_directory)}")
     model_files = glob.glob(os.path.join(models_directory, 'pipeline_*.joblib'))
     if not model_files:
         print(f"Error: No model pipeline files ('pipeline_*.joblib') found in '{models_directory}'.")
         print("--- Prediction Function Ended (No Models Found) ---")
-        return {}
+        # Raising an error might be better than returning {} if models are expected
+        # raise FileNotFoundError(f"No model pipeline files found in '{models_directory}'")
+        return {} # Keep original behavior
     print(f"Found {len(model_files)} model pipelines.")
     predictions = {}
 
-
-    # --- 2. Prepare Input Data ONCE (with matching Feature Engineering) ---
     print("Preparing input data...")
     try:
-        input_df = pd.DataFrame([event_data])
+        # Ensure input is treated as a single row
+        if isinstance(event_data, dict):
+            input_df = pd.DataFrame([event_data])
+        elif isinstance(event_data, pd.DataFrame):
+            input_df = event_data.head(1).copy() # Ensure it's just one event
+        else:
+            raise TypeError("event_data must be a dictionary or pandas DataFrame")
 
-
-        # --- Datetime Conversion ---
         if datetime_col not in input_df.columns:
-            raise ValueError(f"Input 'event_data' missing datetime column '{datetime_col}'.")
-        input_df[datetime_col] = pd.to_datetime(input_df[datetime_col], errors='coerce')
+            # More specific error message
+            raise KeyError(f"Input 'event_data' must contain the datetime column specified by datetime_col: '{datetime_col}'")
+
+        # Use infer_datetime_format for potential speedup, handle errors robustly
+        input_df[datetime_col] = pd.to_datetime(input_df[datetime_col], errors='coerce', infer_datetime_format=True)
         if input_df[datetime_col].isnull().any():
-             raise ValueError(f"Invalid datetime value in '{datetime_col}'.")
+             # Provide the problematic value if possible (assuming single row)
+             bad_value = input_df.loc[input_df[datetime_col].isnull(), datetime_col].iloc[0]
+             raise ValueError(f"Invalid or unparseable datetime value '{bad_value}' found in column '{datetime_col}'.")
 
+        dt_series = input_df[datetime_col].dt
+        input_df['event_hour'] = dt_series.hour
+        input_df['event_dayofweek'] = dt_series.dayofweek
+        input_df['event_month'] = dt_series.month
 
-        # --- Feature Engineering (Matching Training Script) ---
-        # Basic time features (needed for engineering)
-        input_df['event_hour'] = input_df[datetime_col].dt.hour
-        input_df['event_dayofweek'] = input_df[datetime_col].dt.dayofweek # Mon=0, Sun=6
-        input_df['event_month'] = input_df[datetime_col].dt.month
+        input_df['hour_sin'] = np.sin(2 * np.pi * input_df['event_hour'] / 24.0)
+        input_df['hour_cos'] = np.cos(2 * np.pi * input_df['event_hour'] / 24.0)
 
+        input_df['dayofweek_sin'] = np.sin(2 * np.pi * input_df['event_dayofweek'] / 7.0)
+        input_df['dayofweek_cos'] = np.cos(2 * np.pi * input_df['event_dayofweek'] / 7.0)
 
-        # Cyclical Hour Features
-        input_df['hour_sin'] = np.sin(2 * np.pi * input_df['event_hour']/24.0)
-        input_df['hour_cos'] = np.cos(2 * np.pi * input_df['event_hour']/24.0)
-
-
-        # Cyclical Day of Week Features
-        input_df['dayofweek_sin'] = np.sin(2 * np.pi * input_df['event_dayofweek']/7.0)
-        input_df['dayofweek_cos'] = np.cos(2 * np.pi * input_df['event_dayofweek']/7.0)
-
-
-        # Weekend Feature (Assuming Friday=4, Saturday=5 are weekend)
         input_df['is_weekend'] = input_df['event_dayofweek'].isin([4, 5]).astype(int)
-        # ------------------------------------------------------
+
         print("Engineered features created (cyclical time, weekend).")
         print(f"Input DataFrame shape after engineering: {input_df.shape}")
-        # The pipeline's preprocessor expects specific columns used during training.
-        # We created them above. The 'remainder=drop' in the preprocessor handles selection.
-        # print(f"Columns available for pipeline: {input_df.columns.tolist()}") # For debugging
+        # print(f"Columns available for pipeline: {input_df.columns.tolist()}")
 
-
+    # Catch specific expected errors first
     except KeyError as e:
-        print(f"Error preparing input data: Missing expected raw key {e} in 'event_data'.")
-        # List raw features required by the feature engineering logic
-        print(f"Required raw features: latitude, longitude, Maximum Temperature (°C), Gale, נושא, חג_עברי, {datetime_col}")
+        print(f"Error preparing input data: Missing expected key {e}.")
+        print(f"Required raw features should include: latitude, longitude, 'Maximum Temperature (°C)', Gale, 'נושא', 'חג_עברי', and '{datetime_col}'. Check payload keys.")
         print("--- Prediction Function Ended (Input Error) ---")
-        return {}
-    except ValueError as e:
+        # Propagate error for Flask to catch
+        raise KeyError(f"Missing expected data key: {e}") from e
+        # return {} # Keep original behavior if preferred over raising error
+    except (ValueError, TypeError) as e:
          print(f"Error preparing input data: {e}")
          print("--- Prediction Function Ended (Input Error) ---")
-         return {}
+         raise ValueError(f"Data format error during preparation: {e}") from e
+         # return {}
     except Exception as e:
         print(f"An unexpected error occurred preparing input data: {type(e).__name__}: {e}")
         print("--- Prediction Function Ended (Input Error) ---")
-        return {}
+        raise Exception(f"Unexpected error during data preparation: {e}") from e
+        # return {}
 
 
-    # --- 3. Loop Through Models: Load -> Predict -> Delete -> Collect Garbage ---
     print(f"\n--- Starting Loop Through {len(model_files)} Models ---")
     for i, model_path in enumerate(model_files):
         target_col_raw = None
@@ -147,47 +105,53 @@ def predict_next_event_probabilities(event_data, models_directory='trained_model
             target_col_raw = filename.replace('pipeline_', '', 1).replace('.joblib', '')
             print(f"  Target: {target_col_raw}", flush=True)
 
-
-            # Load model
             print(f"  Loading model...", flush=True); start_load_time = time.time()
             model_pipeline = joblib.load(model_path)
             load_time = time.time() - start_load_time; print(f"  Model loaded. ({load_time:.2f}s)", flush=True)
 
-
-            # Predict probability
             print(f"  Predicting probability...", flush=True); start_pred_time = time.time()
-            # Pass the DataFrame with *all* engineered features. The pipeline's
-            # ColumnTransformer ('preprocessor' step) will select the ones it needs.
-            probability_positive_class = model_pipeline.predict_proba(input_df)[0, 1]
+
+            # Ensure predict_proba is available and get probability of the positive class (usually index 1)
+            if not hasattr(model_pipeline, "predict_proba"):
+                 print(f"  ERROR: Model for '{target_col_raw}' does not have a predict_proba method.", flush=True)
+                 continue # Skip this model
+
+            probabilities = model_pipeline.predict_proba(input_df)
+            # Check shape, assume binary classification [prob_class_0, prob_class_1]
+            if probabilities.shape[1] >= 2:
+                probability_positive_class = probabilities[0, 1]
+            else:
+                 # Handle cases where predict_proba might return only one class probability
+                 print(f"  Warning: predict_proba for '{target_col_raw}' returned unexpected shape {probabilities.shape}. Using first value.", flush=True)
+                 probability_positive_class = probabilities[0, 0]
+
             pred_time = time.time() - start_pred_time; print(f"  Prediction complete. Prob={probability_positive_class:.4f} ({pred_time:.2f}s)", flush=True)
 
-
             cleaned_event_name = clean_label(target_col_raw)
-            predictions[cleaned_event_name] = probability_positive_class
+            predictions[cleaned_event_name] = float(probability_positive_class) # Ensure float type
 
 
-        # Error Handling
-        except FileNotFoundError: print(f"  ERROR: Model file not found {model_path}.", flush=True)
-        except (joblib.externals.loky.process_executor.TerminatedWorkerError, EOFError): print(f"  ERROR: Joblib worker terminated/EOFError for '{target_col_raw}'. Check memory/file.", flush=True)
-
-        except KeyError as e: print(f"  ERROR predicting for '{target_col_raw}': Required feature {e} not found by pipeline's preprocessor.", flush=True)
-        except ValueError as e: print(f"  ERROR during prediction for '{target_col_raw}': {e}.", flush=True)
-        except Exception as e: target_name = target_col_raw or os.path.basename(model_path); print(f"  UNEXPECTED ERROR for '{target_name}': {type(e).__name__}: {e}", flush=True)
+        # Specific Error Handling
+        except FileNotFoundError: print(f"  ERROR: Model file not found at expected path {model_path}.", flush=True); continue # Continue loop
+        except (joblib.externals.loky.process_executor.TerminatedWorkerError, EOFError, TypeError, ValueError) as e: # Broader catch for loading issues
+             print(f"  ERROR: Failed to load/deserialize model '{target_col_raw}' from {model_path}. Check file integrity/compatibility. Error: {type(e).__name__}: {e}", flush=True); continue
+        except AttributeError as e: print(f"  ERROR: Problem accessing attribute during prediction for '{target_col_raw}'. Might be model structure issue. Error: {e}", flush=True); continue
+        except KeyError as e: print(f"  ERROR predicting for '{target_col_raw}': Required feature {e} not found by pipeline's preprocessor. Check feature engineering alignment.", flush=True); continue # Feature mismatch
+        except ValueError as e: print(f"  ERROR during prediction for '{target_col_raw}': {e}. Check data types/values expected by model.", flush=True); continue
+        except Exception as e: # Catch unexpected issues during loop
+            target_name = target_col_raw or os.path.basename(model_path); print(f"  UNEXPECTED ERROR processing model '{target_name}': {type(e).__name__}: {e}", flush=True); continue # Log and continue
         finally:
-            # Clean up
-            if model_pipeline is not None: del model_pipeline; # print(f"  Model object deleted.", flush=True)
-            # else: print(f"  Model object None.", flush=True)
-            collected_count = gc.collect(); # print(f"  GC collected {collected_count} objects.", flush=True)
+            if model_pipeline is not None: del model_pipeline
+            collected_count = gc.collect()
+            # print(f"  GC collected {collected_count} objects.", flush=True) # Optional: reduce verbosity
 
 
-
-
-    # --- 4. Sort Results ---
     print("\n--- Model Loop Finished ---")
     print(f"Successfully processed {len(predictions)} models out of {len(model_files)} found.")
     if not predictions:
-        print("Warning: No predictions generated."); print("--- Prediction Function Ended (No Results) ---"); return {}
-
+        print("Warning: No predictions were generated. Check logs for errors in each model loop iteration.");
+        print("--- Prediction Function Ended (No Results) ---");
+        return {} # Return empty if no model succeeded
 
     print("Sorting results...")
     sorted_predictions = dict(sorted(predictions.items(), key=lambda item: item[1], reverse=True))
@@ -195,33 +159,38 @@ def predict_next_event_probabilities(event_data, models_directory='trained_model
     return sorted_predictions
 
 
-# ===============================================================
-# --- Example Usage (Updated for Latest Features & Model Dir) ---
-# ===============================================================
+# This function is called by the Flask app
+def predict(sample_event, models_directory_path):
+    # MODELS_SAVE_DIRECTORY = models_directory_path # Renamed for clarity
 
-
-# 1. Define a COMPLETE sample event dictionary with RAW features
-def predict(sample_event, path):
-    # 2. Define the directory where the **XGBoost** (or LightGBM) models are saved
-    #    *** UPDATE THIS PATH IF NECESSARY ***
-    MODELS_SAVE_DIRECTORY = path  # <<< Ensure this is correct
-
-
-
-    # 3. Call the prediction function
     print("Calling predict_next_event_probabilities...")
-    event_probabilities = predict_next_event_probabilities(
-        event_data=sample_event,
-        models_directory=MODELS_SAVE_DIRECTORY,
-        datetime_col='תאריך ושעה פתיחה'
-    )
+    # print(sample_event) # Print payload in Flask route instead if sensitive
+
+    # Error handling added around the call
+    try:
+        event_probabilities = predict_next_event_probabilities(
+            event_data=sample_event,
+            models_directory=models_directory_path, # Pass the path directly
+            datetime_col='תאריך ושעה פתיחה' # Ensure this matches the key in sample_event
+        )
+    except (FileNotFoundError, KeyError, ValueError, Exception) as e:
+        # Log the error from predict_next_event_probabilities if it was raised
+        print(f"Error received from predict_next_event_probabilities: {type(e).__name__}: {e}")
+        # Depending on desired behavior, re-raise or return empty/error indicator
+        # return {"error": str(e)} # Example error indicator
+        raise e # Re-raise to be caught by Flask route's error handler
+
     print("Function call returned.")
 
-
-# 4. Print the results
     if event_probabilities:
         print("\nPredicted Probabilities for Next Event Types (Sorted):")
-        for event_type, probability in event_probabilities.items():
-            print(f"- {event_type}: {probability:.2%}")
+        # Limit printing if too many results
+        # count = 0
+        # for event_type, probability in event_probabilities.items():
+        #     print(f"- {event_type}: {probability:.2%}")
+        #     count += 1
+        #     if count >= 10: print("... (results truncated)"); break
     else:
         print("\nCould not generate predictions. Check logs/errors above.")
+
+    return event_probabilities

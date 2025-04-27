@@ -4,9 +4,9 @@ import "./PredictItem.css";
 function PredictItem({ label, percentage }) {
   let backgroundColor = "";
 
-  if (percentage >= 70) {
+  if (percentage >= 40) {
     backgroundColor = "#F9B6B6"; // אדום בהיר
-  } else if (percentage >= 30) {
+  } else if (percentage >= 10) {
     backgroundColor = "#FFCCB1"; // כתום בהיר
   } else {
     backgroundColor = "#FFFAC5"; // צהוב בהיר

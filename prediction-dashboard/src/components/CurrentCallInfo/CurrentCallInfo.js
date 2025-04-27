@@ -11,12 +11,6 @@ function CurrentCallInfo({ type, time, weather, specialDay }) {
         <div>
           <strong>שעת התרחשות:</strong> {time}
         </div>
-        <div>
-          <strong>מזג אוויר:</strong> {weather}
-        </div>
-        <div>
-          <strong>יום מיוחד:</strong> {specialDay}
-        </div>
       </div>
     </div>
   );
